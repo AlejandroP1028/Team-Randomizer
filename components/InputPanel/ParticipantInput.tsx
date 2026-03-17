@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useAppStore } from "@/store/useAppStore";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import type { Participant } from "@/lib/types";
 
 const NAMES = [
@@ -15,10 +16,9 @@ const NAMES = [
 
 const DEPARTMENTS = ["Product", "FE", "BE", "DC/ML"];
 
-function randomSample(): Participant[] {
+function randomSample(count: number): Participant[] {
   const shuffled = [...NAMES].sort(() => Math.random() - 0.5);
-  const count = 6 + Math.floor(Math.random() * 10);
-  return shuffled.slice(0, count).map((name, i) => ({
+  return shuffled.slice(0, Math.min(count, NAMES.length)).map((name, i) => ({
     id: `p_${i}_${name.toLowerCase()}`,
     name,
     skillLevel: (1 + Math.floor(Math.random() * 5)) as 1 | 2 | 3 | 4 | 5,
@@ -45,21 +45,39 @@ function parseLines(raw: string): Participant[] {
     });
 }
 
+function serialize(participants: Participant[]): string {
+  return participants.map(p => {
+    const dept = p.department ? `, ${p.department}` : "";
+    const skill = p.skillLevel != null ? `, ${p.skillLevel}` : "";
+    return `${p.name}${dept}${skill}`;
+  }).join("\n");
+}
+
 export function ParticipantInput() {
   const { participants, setParticipants } = useAppStore(useShallow(s => ({
     participants: s.participants,
     setParticipants: s.setParticipants,
   })));
+  const [sampleCount, setSampleCount] = useState(12);
+  const [rawValue, setRawValue] = useState(() => serialize(participants));
+  // True while the user is actively editing — prevents external sync from clobbering their input
+  const editingRef = useRef(false);
+
+  // When participants change externally (load sample, undo), overwrite the textarea
+  useEffect(() => {
+    if (!editingRef.current) {
+      setRawValue(serialize(participants));
+    }
+  }, [participants]);
 
   const onChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setParticipants(parseLines(e.target.value));
+    editingRef.current = true;
+    const text = e.target.value;
+    setRawValue(text);
+    setParticipants(parseLines(text));
+    // Allow external sync again after React has flushed the store update
+    setTimeout(() => { editingRef.current = false; }, 0);
   }, [setParticipants]);
-
-  const rawValue = participants.map(p => {
-    const dept = p.department ? `, ${p.department}` : "";
-    const skill = p.skillLevel != null ? `, ${p.skillLevel}` : "";
-    return `${p.name}${dept}${skill}`;
-  }).join("\n");
 
   return (
     <div className="flex flex-col gap-2">
@@ -67,14 +85,24 @@ export function ParticipantInput() {
         <label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
           Participants
         </label>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-5 px-1.5 text-[11px] text-primary hover:text-primary"
-          onClick={() => setParticipants(randomSample())}
-        >
-          Load sample
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Input
+            type="number"
+            min={1}
+            max={NAMES.length}
+            value={sampleCount}
+            onChange={e => setSampleCount(Math.min(NAMES.length, Math.max(1, parseInt(e.target.value) || 1)))}
+            className="h-5 w-12 px-1.5 text-[11px] text-center font-mono [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-5 px-1.5 text-[11px] text-primary hover:text-primary"
+            onClick={() => setParticipants(randomSample(sampleCount))}
+          >
+            Load sample
+          </Button>
+        </div>
       </div>
       <Textarea
         value={rawValue}
