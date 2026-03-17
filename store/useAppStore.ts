@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Participant, TeamConfig, Team, SolverWarning, Preset } from "@/lib/types";
+import type { Participant, TeamConfig, Team, SolverWarning, Preset, Task, TaskStatus, PrdWorkspace } from "@/lib/types";
 
 const EMPTY_CUSTOM: Team = { id: "custom", name: "Custom", members: [], stats: { avgSkill: 0, departments: {} } };
 
@@ -30,6 +30,16 @@ interface AppState {
   savePreset: (name: string) => void;
   loadPreset: (id: string) => void;
   deletePreset: (id: string) => void;
+
+  workspaces: Record<string, PrdWorkspace>;
+  activeFilter: string | null;
+  setPrdText: (presetId: string, text: string) => void;
+  setTasks: (presetId: string, tasks: Task[]) => void;
+  addTask: (presetId: string, task: Omit<Task, "id">) => void;
+  updateTask: (presetId: string, taskId: string, patch: Partial<Task>) => void;
+  deleteTask: (presetId: string, taskId: string) => void;
+  moveTask: (presetId: string, taskId: string, status: TaskStatus) => void;
+  setActiveFilter: (name: string | null) => void;
 }
 
 const MAX_HISTORY = 20;
@@ -62,6 +72,8 @@ export const useAppStore = create<AppState>()(
       presets: [],
       activePresetId: null,
       loading: false,
+      workspaces: {},
+      activeFilter: null,
 
       setParticipants: (participants) => set({ participants }),
       setConfig: (c) => set(s => ({ config: { ...s.config, ...c } })),
@@ -175,10 +187,63 @@ export const useAppStore = create<AppState>()(
         presets: s.presets.filter(p => p.id !== id),
         activePresetId: s.activePresetId === id ? null : s.activePresetId,
       })),
+
+      setPrdText: (presetId, text) => set(s => ({
+        workspaces: {
+          ...s.workspaces,
+          [presetId]: { ...s.workspaces[presetId], presetId, prdText: text, tasks: s.workspaces[presetId]?.tasks ?? [], lastGeneratedAt: s.workspaces[presetId]?.lastGeneratedAt ?? null },
+        },
+      })),
+      setTasks: (presetId, tasks) => set(s => ({
+        workspaces: {
+          ...s.workspaces,
+          [presetId]: { ...s.workspaces[presetId], presetId, prdText: s.workspaces[presetId]?.prdText ?? "", tasks, lastGeneratedAt: new Date().toISOString() },
+        },
+      })),
+      addTask: (presetId, task) => set(s => {
+        const ws = s.workspaces[presetId] ?? { presetId, prdText: "", tasks: [], lastGeneratedAt: null };
+        return {
+          workspaces: {
+            ...s.workspaces,
+            [presetId]: { ...ws, tasks: [...ws.tasks, { ...task, id: `task_${Date.now()}_${Math.random().toString(36).slice(2)}` }] },
+          },
+        };
+      }),
+      updateTask: (presetId, taskId, patch) => set(s => {
+        const ws = s.workspaces[presetId];
+        if (!ws) return s;
+        return {
+          workspaces: {
+            ...s.workspaces,
+            [presetId]: { ...ws, tasks: ws.tasks.map(t => t.id === taskId ? { ...t, ...patch } : t) },
+          },
+        };
+      }),
+      deleteTask: (presetId, taskId) => set(s => {
+        const ws = s.workspaces[presetId];
+        if (!ws) return s;
+        return {
+          workspaces: {
+            ...s.workspaces,
+            [presetId]: { ...ws, tasks: ws.tasks.filter(t => t.id !== taskId) },
+          },
+        };
+      }),
+      moveTask: (presetId, taskId, status) => set(s => {
+        const ws = s.workspaces[presetId];
+        if (!ws) return s;
+        return {
+          workspaces: {
+            ...s.workspaces,
+            [presetId]: { ...ws, tasks: ws.tasks.map(t => t.id === taskId ? { ...t, status } : t) },
+          },
+        };
+      }),
+      setActiveFilter: (name) => set({ activeFilter: name }),
     }),
     {
       name: "teamrandomizer",
-      partialize: (s) => ({ config: s.config, presets: s.presets, activePresetId: s.activePresetId }),
+      partialize: (s) => ({ config: s.config, presets: s.presets, activePresetId: s.activePresetId, workspaces: s.workspaces }),
     }
   )
 );

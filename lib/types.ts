@@ -57,3 +57,29 @@ export interface SlackExportResponse { text: string; }
 export interface ApiError {
   error: { code: "VALIDATION_ERROR" | "CONSTRAINT_CONFLICT" | "INTERNAL_ERROR"; message: string; details?: Record<string, unknown>; };
 }
+
+export type TaskPriority = "high" | "medium" | "low";
+export type TaskStatus   = "todo" | "in_progress" | "in_review" | "done";
+
+export interface Task {
+  id: string;
+  title: string;
+  description: string;
+  priority: TaskPriority;
+  section: string;
+  suggestedAssignee: Participant | null;
+  confirmedAssignee: Participant | null;
+  status: TaskStatus;
+}
+
+export interface PrdWorkspace {
+  presetId: string;
+  prdText: string;
+  tasks: Task[];
+  lastGeneratedAt: string | null;
+}
+
+export interface GenerateTasksRequest {
+  prdText: string;
+  participants: Participant[];
+}

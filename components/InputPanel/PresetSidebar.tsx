@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
+import { useRouter } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import { useGenerate } from "@/hooks/useGenerate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { FolderOpen } from "lucide-react";
 
 export function PresetSidebar() {
   const { presets, activePresetId, loadPreset, savePreset, deletePreset } = useAppStore(useShallow(s => ({
@@ -17,6 +19,7 @@ export function PresetSidebar() {
     deletePreset: s.deletePreset,
   })));
   const { generate } = useGenerate();
+  const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [newName, setNewName] = useState("");
 
@@ -48,11 +51,15 @@ export function PresetSidebar() {
             </Badge>
             <button
               onClick={() => deletePreset(p.id)}
-              className="absolute -top-1.5 -right-1.5 hidden group-hover:flex w-4 h-4 items-center
-                justify-center rounded-full bg-card border border-border
-                text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+              className="absolute -top-1.5 -right-1.5 hidden group-hover:flex w-4 h-4 items-center justify-center rounded-full bg-card border border-border text-[10px] text-muted-foreground hover:text-destructive transition-colors"
             >
               ×
+            </button>
+            <button
+              onClick={() => { loadPreset(p.id); router.push(`/workspace/${p.id}`); }}
+              className="absolute -top-1.5 -left-1.5 hidden group-hover:flex w-4 h-4 items-center justify-center rounded-full bg-card border border-border text-muted-foreground hover:text-primary transition-colors"
+            >
+              <FolderOpen className="w-2.5 h-2.5" />
             </button>
           </div>
         ))}
