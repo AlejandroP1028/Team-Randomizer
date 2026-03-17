@@ -26,6 +26,14 @@ interface AppState {
 
 const MAX_HISTORY = 20;
 
+function computeStats(members: Participant[]): { avgSkill: number; departments: Record<string, number> } {
+  const skills = members.map(p => p.skillLevel ?? 3);
+  const avg = skills.reduce((s, n) => s + n, 0) / (skills.length || 1);
+  const departments: Record<string, number> = {};
+  for (const p of members) if (p.department) departments[p.department] = (departments[p.department] ?? 0) + 1;
+  return { avgSkill: Math.round(avg * 10) / 10, departments };
+}
+
 function cloneTeams(teams: Team[]): Team[] {
   return teams.map(t => ({ ...t, members: [...t.members] }));
 }
@@ -48,19 +56,23 @@ export const useAppStore = create<AppState>()(
       setResult: (teams, warnings) => set({ teams, warnings, teamHistory: [] }),
 
       swap: (srcTi, srcMi, dstTi, dstMi) => set(s => {
+        const history = [...s.teamHistory, cloneTeams(s.teams)].slice(-MAX_HISTORY);
         const teams = cloneTeams(s.teams);
         const tmp = teams[srcTi].members[srcMi];
         teams[srcTi].members[srcMi] = teams[dstTi].members[dstMi];
         teams[dstTi].members[dstMi] = tmp;
-        const history = [...s.teamHistory, cloneTeams(s.teams)].slice(-MAX_HISTORY);
+        teams[srcTi].stats = computeStats(teams[srcTi].members);
+        teams[dstTi].stats = computeStats(teams[dstTi].members);
         return { teams, teamHistory: history };
       }),
 
       move: (srcTi, srcMi, dstTi) => set(s => {
+        const history = [...s.teamHistory, cloneTeams(s.teams)].slice(-MAX_HISTORY);
         const teams = cloneTeams(s.teams);
         const [member] = teams[srcTi].members.splice(srcMi, 1);
         teams[dstTi].members.push(member);
-        const history = [...s.teamHistory, cloneTeams(s.teams)].slice(-MAX_HISTORY);
+        teams[srcTi].stats = computeStats(teams[srcTi].members);
+        teams[dstTi].stats = computeStats(teams[dstTi].members);
         return { teams, teamHistory: history };
       }),
 
