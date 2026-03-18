@@ -1,7 +1,8 @@
 "use client";
 import { use } from "react";
-import { PrdInput } from "@/components/WorkspacePanel/PrdTab/PrdInput";
-export default function PrdPage({ params }: { params: Promise<{ presetId: string }> }) {
+import { WorkspaceShell } from "@/components/WorkspacePanel/WorkspaceShell";
+
+export default function WorkspacePage({ params }: { params: Promise<{ presetId: string }> }) {
   const { presetId } = use(params);
-  return <PrdInput presetId={presetId} />;
+  return <WorkspaceShell presetId={presetId} />;
 }

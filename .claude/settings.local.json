@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest . --typescript --tailwind --app --eslint --no-src-dir --import-alias \"@/*\" --yes)",
+      "Bash(node:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(npm test:*)",
+      "Bash(npx shadcn@latest init -y --defaults)",
+      "Bash(npx shadcn@latest add button card badge select dialog textarea input separator tooltip)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(node -e \"console.log\\(require\\(''./node_modules/next/package.json''\\).version\\)\")",
+      "WebSearch",
+      "Bash(grep -v '^$')",
+      "Bash(git -C /c/Users/alejandro/projects/Team-Randomizer log --oneline -5)",
+      "Bash(git -C /c/Users/alejandro/projects/Team-Randomizer status --short)",
+      "Bash(ls /c/Users/alejandro/projects/Team-Randomizer/app/workspace/[presetId]/prd/)",
+      "Bash(ls:*)",
+      "Bash(rm -f \"C:/Users/alejandro/projects/Team-Randomizer/app/workspace/[presetId]/prd/page.tsx\" \"C:/Users/alejandro/projects/Team-Randomizer/app/workspace/[presetId]/tasks/page.tsx\")",
+      "Bash(rmdir \"C:/Users/alejandro/projects/Team-Randomizer/app/workspace/[presetId]/prd\" \"C:/Users/alejandro/projects/Team-Randomizer/app/workspace/[presetId]/tasks\")",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)"
+    ]
+  }
+}

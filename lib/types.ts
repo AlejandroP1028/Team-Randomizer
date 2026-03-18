@@ -1,12 +1,23 @@
 export type Strategy = "balanced_skill" | "mixed_department" | "random" | "custom";
+export type Seniority = "junior" | "mid" | "senior";
+export type GroupingMode = "mixed" | "specialised";
+
+export interface BalanceWeights {
+  skill:      number;   // 0–10
+  department: number;   // 0–10
+  seniority:  number;   // 0–10
+  headcount:  number;   // 0–10
+}
 
 export interface Participant {
   id: string;
   name: string;
-  skillLevel?: number | null;   // 1–5
+  skillLevel?: number | null;    // 1–5
   department?: string | null;
+  seniority?: Seniority | null;
+  tags?: string[];               // e.g. ["backend", "postgres", "python"]
   preferences?: {
-    mustSeparateFrom: string[];    // participant IDs
+    mustSeparateFrom: string[];
     preferTogetherWith: string[];
   };
 }
@@ -15,11 +26,16 @@ export interface TeamConfig {
   strategy: Strategy;
   teamCount?: number;
   teamSize?: number;
+  groupingMode?: GroupingMode;    // "mixed" (default) | "specialised"
+  weights?: BalanceWeights;
+  requireSeniorPerTeam?: boolean;
 }
 
 export interface TeamStats {
-  avgSkill: number;
+  avgSkill:    number;
   departments: Record<string, number>;
+  tags:        Record<string, number>;     // tag → count across team members
+  seniority:   Record<string, number>;     // "junior"|"mid"|"senior" → count
 }
 
 export interface Team {
@@ -35,10 +51,19 @@ export interface SolverWarning {
   message: string;
 }
 
+export interface ObjectiveScores {
+  skill:      number;   // 0–100
+  department: number;   // 0–100
+  seniority:  number;   // 0–100
+  headcount:  number;   // 0–100
+  composite:  number;   // weighted average
+}
+
 export interface SolverResult {
   teams: Team[];
   warnings: SolverWarning[];
   remainderCount: number;
+  scores: ObjectiveScores;
 }
 
 export interface Preset {
@@ -48,6 +73,7 @@ export interface Preset {
   config: TeamConfig;
   createdAt: string;
   updatedAt: string;
+  color: string;  // hex value, e.g. "#1D9E75"
 }
 
 export interface GenerateRequest  { participants: Participant[]; config: TeamConfig; }
@@ -82,4 +108,36 @@ export interface PrdWorkspace {
 export interface GenerateTasksRequest {
   prdText: string;
   participants: Participant[];
+}
+
+export interface TaskFilters {
+  assignees:  string[];
+  priorities: TaskPriority[];
+  statuses:   TaskStatus[];
+}
+
+export interface SubTeam {
+  id: string;
+  splitId: string;
+  name: string;
+  members: Participant[];
+}
+
+export interface Split {
+  id: string;
+  name: string;
+  prdMode: "shared" | "per_team";
+  color: string;
+  allParticipants: Participant[];
+  config: TeamConfig;
+  subTeams: SubTeam[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SplitWorkspace {
+  subTeamId: string;
+  prdText: string;
+  tasks: Task[];
+  lastGeneratedAt: string | null;
 }

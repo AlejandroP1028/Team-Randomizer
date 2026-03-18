@@ -19,7 +19,7 @@ export function useGenerate() {
       });
       const data = await res.json();
       if (!res.ok) return { error: data?.error?.message ?? "Failed to generate teams." };
-      setResult(data.teams, data.warnings);
+      setResult(data.teams, data.warnings, data.scores);
       return {};
     } catch (e) {
       return { error: e instanceof Error ? e.message : "Network error." };

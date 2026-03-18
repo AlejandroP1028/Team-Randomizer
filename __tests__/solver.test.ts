@@ -1,10 +1,20 @@
 import { describe, it, expect } from "vitest";
 import { generateTeams, ConstraintConflictError } from "@/lib/solver";
+import { buildTaskPrompt } from "@/lib/prd";
 import type { Participant, TeamConfig } from "@/lib/types";
 
 function p(id: string, name: string, skill?: number, dept?: string): Participant {
   return { id, name, skillLevel: skill ?? null, department: dept ?? null };
 }
+
+const SIX_WITH_TAGS: Participant[] = [
+  { id:"a", name:"Alice", skillLevel:4, department:"Eng",    seniority:"senior", tags:["backend","postgres"],  preferences:{mustSeparateFrom:[],preferTogetherWith:[]} },
+  { id:"b", name:"Bob",   skillLevel:3, department:"Design", seniority:"mid",    tags:["figma","react"],       preferences:{mustSeparateFrom:[],preferTogetherWith:[]} },
+  { id:"c", name:"Carol", skillLevel:2, department:"Eng",    seniority:"junior", tags:["frontend","react"],    preferences:{mustSeparateFrom:[],preferTogetherWith:[]} },
+  { id:"d", name:"Dave",  skillLevel:5, department:"PM",     seniority:"senior", tags:[],                     preferences:{mustSeparateFrom:[],preferTogetherWith:[]} },
+  { id:"e", name:"Eve",   skillLevel:1, department:"Design", seniority:"junior", tags:["figma"],               preferences:{mustSeparateFrom:[],preferTogetherWith:[]} },
+  { id:"f", name:"Frank", skillLevel:3, department:"Eng",    seniority:"mid",    tags:["backend","python"],    preferences:{mustSeparateFrom:[],preferTogetherWith:[]} },
+];
 
 describe("solver", () => {
   it("1. skill imputation uses cohort median", () => {
@@ -33,7 +43,6 @@ describe("solver", () => {
       p("d", "Dave", 3),
     ];
     const config: TeamConfig = { strategy: "random", teamCount: 2 };
-    // Max team size is 2 but constraint group is 3
     expect(() => generateTeams(participants, config)).toThrow(ConstraintConflictError);
   });
 
@@ -57,7 +66,7 @@ describe("solver", () => {
     const result = generateTeams(participants, config);
     const globalAvg = participants.reduce((s, p) => s + (p.skillLevel ?? 3), 0) / participants.length;
     for (const team of result.teams) {
-      expect(Math.abs(team.stats.avgSkill - globalAvg)).toBeLessThanOrEqual(0.5 + 0.05); // small float tolerance
+      expect(Math.abs(team.stats.avgSkill - globalAvg)).toBeLessThanOrEqual(0.5 + 0.05);
     }
   });
 
@@ -70,7 +79,6 @@ describe("solver", () => {
   });
 
   it("7. remainderCount computed correctly", () => {
-    // 7 participants into 3 teams: 7 % 3 = 1 remainder
     const participants = Array.from({ length: 7 }, (_, i) => p(`p${i}`, `P${i}`, 3));
     const config: TeamConfig = { strategy: "random", teamCount: 3 };
     const result = generateTeams(participants, config);
@@ -90,22 +98,13 @@ describe("solver", () => {
     const team1Ids = result.teams[1].members.map(m => m.id);
     const aliceInT0 = team0Ids.includes("a");
     const bobInT0 = team0Ids.includes("b");
-    expect(aliceInT0 && bobInT0).toBe(false); // not both in team 0
+    expect(aliceInT0 && bobInT0).toBe(false);
     const aliceInT1 = team1Ids.includes("a");
     const bobInT1 = team1Ids.includes("b");
-    expect(aliceInT1 && bobInT1).toBe(false); // not both in team 1
+    expect(aliceInT1 && bobInT1).toBe(false);
   });
 
   it("9. soft constraint warning emitted when prefer-together can't be satisfied", () => {
-    // Snake-draft with balanced_skill into 3 teams:
-    // Sort desc: Alice(5), Bob(4), Carol(3), Dave(2), Eve(1), Frank(5)
-    // Actually sort: Alice(5),Frank(5),Bob(4),Carol(3),Dave(2),Eve(1)
-    // Round 0 (even): T0=Alice(5), T1=Frank(5), T2=Bob(4)
-    // Round 1 (odd):  T2=Carol(3), T1=Dave(2),  T0=Eve(1)
-    // T0=[Alice(5),Eve(1)] avg=3, T1=[Frank(5),Dave(2)] avg=3.5, T2=[Bob(4),Carol(3)] avg=3.5
-    // globalAvg = (5+5+4+3+2+1)/6 = 3.33
-    // Alice(T0) wants Bob(T2). To bring Bob to T0, must swap Eve(1) for Bob(4).
-    // newT0avg = avg([Alice(5),Bob(4)]) = 4.5 -> diff from 3.33 = 1.17 > 0.5 -> blocked -> warning
     const participants = [
       { ...p("a", "Alice", 5), preferences: { mustSeparateFrom: [], preferTogetherWith: ["b"] } },
       { ...p("b", "Bob",   4), preferences: { mustSeparateFrom: [], preferTogetherWith: [] } },
@@ -129,5 +128,58 @@ describe("solver", () => {
       const decimals = s.includes(".") ? s.split(".")[1].length : 0;
       expect(decimals).toBeLessThanOrEqual(1);
     }
+  });
+
+  // ─── Multi-objective solver tests ───────────────────────────────────────────
+
+  it("11. composite score is between 0 and 100", () => {
+    const result = generateTeams(SIX_WITH_TAGS, { strategy: "balanced_skill", teamCount: 3 });
+    expect(result.scores.composite).toBeGreaterThan(0);
+    expect(result.scores.composite).toBeLessThanOrEqual(100);
+  });
+
+  it("12. all individual scores are 0–100", () => {
+    const result = generateTeams(SIX_WITH_TAGS, { strategy: "balanced_skill", teamCount: 3 });
+    for (const key of ["skill", "department", "seniority", "headcount"] as const) {
+      expect(result.scores[key]).toBeGreaterThanOrEqual(0);
+      expect(result.scores[key]).toBeLessThanOrEqual(100);
+    }
+  });
+
+  it("13. specialised mode produces high department score", () => {
+    const result = generateTeams(SIX_WITH_TAGS, {
+      strategy: "balanced_skill",
+      teamCount: 3,
+      groupingMode: "specialised",
+    });
+    expect(result.scores.department).toBeGreaterThan(50);
+  });
+
+  it("14. requireSeniorPerTeam places at least one senior on every team", () => {
+    // SIX_WITH_TAGS has 2 seniors (Alice, Dave) — use 2 teams so each can have one
+    const result = generateTeams(SIX_WITH_TAGS, {
+      strategy: "balanced_skill",
+      teamCount: 2,
+      requireSeniorPerTeam: true,
+    });
+    const isSenior = (p: Participant) =>
+      p.seniority === "senior" || (!p.seniority && (p.skillLevel ?? 3) >= 4);
+    for (const team of result.teams) {
+      expect(team.members.some(isSenior)).toBe(true);
+    }
+  });
+
+  it("15. computeStats includes tags and seniority", () => {
+    const result = generateTeams(SIX_WITH_TAGS, { strategy: "balanced_skill", teamCount: 3 });
+    for (const team of result.teams) {
+      expect(team.stats).toHaveProperty("tags");
+      expect(team.stats).toHaveProperty("seniority");
+    }
+  });
+
+  it("16. buildTaskPrompt includes tags in roster", () => {
+    const prompt = buildTaskPrompt("# Test PRD\nBuild a login page.", SIX_WITH_TAGS);
+    expect(prompt).toContain("backend");
+    expect(prompt).toContain("figma");
   });
 });

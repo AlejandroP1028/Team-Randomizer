@@ -1,11 +1,17 @@
 "use client";
 import { useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
-import type { Task } from "@/lib/types";
+import type { Participant, Task } from "@/lib/types";
+
+const EMPTY_PARTICIPANTS: Participant[] = [];
 
 export function useGenerateTasks(presetId: string) {
-  const prdText = useAppStore(s => s.workspaces[presetId]?.prdText ?? "");
-  const participants = useAppStore(s => s.presets.find(p => p.id === presetId)?.participants ?? []);
+  const prdText      = useAppStore(s => s.workspaces[presetId]?.prdText ?? "");
+  const participants = useAppStore(s =>
+    s.presets.find(p => p.id === presetId)?.participants ??
+    s.splits.find(sp => sp.id === presetId)?.allParticipants ??
+    EMPTY_PARTICIPANTS
+  );
   const setTasks = useAppStore(s => s.setTasks);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

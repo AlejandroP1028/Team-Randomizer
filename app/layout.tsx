@@ -3,6 +3,7 @@ import { Onest } from "next/font/google";
 import { Fira_Code } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Rail } from "@/components/Rail";
 
 const onest = Onest({ subsets: ["latin"], variable: "--font-sans" });
 const firaCode = Fira_Code({ subsets: ["latin"], variable: "--font-mono", weight: ["400", "500"] });
@@ -22,7 +23,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <div className="flex h-screen overflow-hidden">
+            <Rail />
+            <main className="flex-1 overflow-hidden min-w-0">
+              {children}
+            </main>
+          </div>
         </ThemeProvider>
       </body>
     </html>

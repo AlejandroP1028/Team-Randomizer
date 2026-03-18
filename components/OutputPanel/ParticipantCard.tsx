@@ -37,12 +37,13 @@ export function ParticipantCard({ participant, teamIndex, memberIndex }: Props) 
   const skill = Math.round(participant.skillLevel ?? 3);
   const skillClass = SKILL_STYLE[skill] ?? SKILL_STYLE[3];
   const dotColor = participant.department ? (DEPT_DOT[participant.department] ?? "bg-muted-foreground") : null;
+  const hasMeta = !!participant.department || (participant.tags && participant.tags.length > 0);
 
   return (
     <div
       ref={(node: HTMLDivElement | null) => { setDragRef(node); setDropRef(node); }}
       className={`
-        group flex items-center gap-2 px-2 py-1.5 rounded-md text-xs
+        group flex flex-col rounded-md text-xs
         cursor-grab active:cursor-grabbing select-none
         border transition-all duration-100
         ${isDragging
@@ -55,30 +56,51 @@ export function ParticipantCard({ participant, teamIndex, memberIndex }: Props) 
       {...attributes}
       {...listeners}
     >
-      {/* Grip */}
-      <div className="grid grid-cols-2 gap-[3px] opacity-20 group-hover:opacity-60 transition-opacity shrink-0">
-        {[...Array(6)].map((_, i) => (
-          <span key={i} className="block w-[3px] h-[3px] rounded-full bg-foreground" />
-        ))}
+      {/* Main row — always visible */}
+      <div className="flex items-center gap-2 px-2 py-1.5">
+        {/* Grip */}
+        <div className="grid grid-cols-2 gap-[3px] opacity-20 group-hover:opacity-60 transition-opacity shrink-0">
+          {[...Array(6)].map((_, i) => (
+            <span key={i} className="block w-[3px] h-[3px] rounded-full bg-foreground" />
+          ))}
+        </div>
+
+        {/* Dept dot */}
+        {dotColor && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />}
+
+        {/* Name */}
+        <span className="flex-1 text-foreground font-medium truncate">{participant.name}</span>
+
+        {/* Skill */}
+        <Badge variant="outline" className={`font-mono text-[10px] px-1.5 h-4 border-0 ${skillClass} shrink-0`}>
+          {skill}
+        </Badge>
       </div>
 
-      {/* Dept dot */}
-      {dotColor && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />}
-
-      {/* Name */}
-      <span className="flex-1 text-foreground font-medium truncate">{participant.name}</span>
-
-      {/* Dept label on hover */}
-      {participant.department && (
-        <span className="text-muted-foreground text-[10px] shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-          {participant.department}
-        </span>
+      {/* Meta row — dept label + tags, only rendered when hovered and data exists */}
+      {hasMeta && (
+        <div className="hidden group-hover:flex items-center gap-1.5 flex-wrap px-2 pb-1.5 pl-9">
+          {participant.department && (
+            <span className="text-muted-foreground text-[10px] shrink-0">
+              {participant.department}
+            </span>
+          )}
+          {participant.tags && participant.tags.length > 0 && (
+            <>
+              {participant.department && <span className="text-border text-[10px]">·</span>}
+              {participant.tags.slice(0, 3).map(tag => (
+                <span key={tag}
+                  className="text-[9px] px-1.5 py-0.5 rounded bg-secondary border border-border text-muted-foreground">
+                  {tag}
+                </span>
+              ))}
+              {participant.tags.length > 3 && (
+                <span className="text-[9px] text-muted-foreground">+{participant.tags.length - 3}</span>
+              )}
+            </>
+          )}
+        </div>
       )}
-
-      {/* Skill */}
-      <Badge variant="outline" className={`font-mono text-[10px] px-1.5 h-4 border-0 ${skillClass} shrink-0`}>
-        {skill}
-      </Badge>
     </div>
   );
 }
