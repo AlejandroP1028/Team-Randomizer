@@ -1,5 +1,6 @@
 "use client";
 import { useAppStore } from "@/store/useAppStore";
+import { Card } from "@/components/ui/card";
 import type { Participant, Seniority } from "@/lib/types";
 
 const SKILL_STYLE: Record<number, string> = {
@@ -25,7 +26,8 @@ function initials(name: string) {
 
 function MemberRow({ p, color }: { p: Participant; color: string }) {
   return (
-    <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-muted/50 transition-colors">
+    <Card className="flex-row items-center gap-2 py-2 px-2.5 rounded-lg cursor-default
+      hover:bg-muted/40 hover:ring-foreground/20 transition-colors">
       <div
         className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
         style={{ background: color + "28", color }}
@@ -38,7 +40,7 @@ function MemberRow({ p, color }: { p: Participant; color: string }) {
           L{p.skillLevel}
         </span>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -87,17 +89,41 @@ function TagCloud({ members }: { members: Participant[] }) {
 
 function MemberList({ members, color }: { members: Participant[]; color: string }) {
   return (
-    <>
+    <div className="flex flex-col gap-1.5">
       <StatsRow members={members} />
       <TagCloud members={members} />
       {members.map(p => <MemberRow key={p.id} p={p} color={color} />)}
-    </>
+    </div>
   );
 }
 
 export function TeamTab({ presetId }: { presetId: string }) {
-  const preset = useAppStore(s => s.presets.find(p => p.id === presetId));
-  const split  = useAppStore(s => s.splits.find(sp => sp.id === presetId));
+  const preset      = useAppStore(s => s.presets.find(p => p.id === presetId));
+  const split       = useAppStore(s => s.splits.find(sp => sp.id === presetId));
+  const parentSplit = useAppStore(s =>
+    !preset && !split
+      ? s.splits.find(sp => sp.subTeams.some(st => st.id === presetId)) ?? null
+      : null
+  );
+  const subTeam = parentSplit?.subTeams.find(st => st.id === presetId) ?? null;
+
+  // ── Per-team mode: show only this sub-team's members ─────────────────────
+  if (subTeam && parentSplit) {
+    const i = parentSplit.subTeams.indexOf(subTeam);
+    const color = DOT_COLORS[i % DOT_COLORS.length];
+    return (
+      <div className="flex flex-col h-full overflow-hidden">
+        <div className="shrink-0 px-3 pt-3 pb-1">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+            Members · {subTeam.members.length}
+          </p>
+        </div>
+        <div className="flex-1 min-h-0 overflow-y-auto px-1 pb-3">
+          <MemberList members={subTeam.members} color={color} />
+        </div>
+      </div>
+    );
+  }
 
   if (split) {
     return (

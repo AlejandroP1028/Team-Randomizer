@@ -2,6 +2,7 @@
 
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import type { Participant } from "@/lib/types";
 
 const SKILL_STYLE: Record<number, string> = {
@@ -34,52 +35,47 @@ export function ParticipantCard({ participant, teamIndex, memberIndex }: Props) 
     data: dragData,
   });
 
-  const skill = Math.round(participant.skillLevel ?? 3);
+  const skill      = Math.round(participant.skillLevel ?? 3);
   const skillClass = SKILL_STYLE[skill] ?? SKILL_STYLE[3];
-  const dotColor = participant.department ? (DEPT_DOT[participant.department] ?? "bg-muted-foreground") : null;
-  const hasMeta = !!participant.department || (participant.tags && participant.tags.length > 0);
+  const dotColor   = participant.department ? (DEPT_DOT[participant.department] ?? "bg-muted-foreground") : null;
+  const hasMeta    = !!participant.department || (participant.tags && participant.tags.length > 0);
 
   return (
-    <div
+    <Card
       ref={(node: HTMLDivElement | null) => { setDragRef(node); setDropRef(node); }}
-      className={`
-        group flex flex-col rounded-md text-xs
-        cursor-grab active:cursor-grabbing select-none
-        border transition-all duration-100
-        ${isDragging
-          ? "opacity-25 border-transparent bg-transparent"
+      className={[
+        "group flex-col rounded-md text-xs gap-0 py-0",
+        "cursor-grab active:cursor-grabbing select-none",
+        "transition-all duration-150",
+        isDragging
+          ? "opacity-25 ring-transparent bg-transparent"
           : isOver
-            ? "border-primary/40 bg-primary/5"
-            : "border-transparent hover:border-border hover:bg-accent"
-        }
-      `}
+            ? "ring-primary/40 bg-primary/5"
+            : "hover:ring-foreground/25 hover:bg-accent",
+      ].join(" ")}
       {...attributes}
       {...listeners}
     >
       {/* Main row — always visible */}
       <div className="flex items-center gap-2 px-2 py-1.5">
-        {/* Grip */}
         <div className="grid grid-cols-2 gap-[3px] opacity-20 group-hover:opacity-60 transition-opacity shrink-0">
           {[...Array(6)].map((_, i) => (
             <span key={i} className="block w-[3px] h-[3px] rounded-full bg-foreground" />
           ))}
         </div>
 
-        {/* Dept dot */}
         {dotColor && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />}
 
-        {/* Name */}
         <span className="flex-1 text-foreground font-medium truncate">{participant.name}</span>
 
-        {/* Skill */}
         <Badge variant="outline" className={`font-mono text-[10px] px-1.5 h-4 border-0 ${skillClass} shrink-0`}>
           {skill}
         </Badge>
       </div>
 
-      {/* Meta row — dept label + tags, only rendered when hovered and data exists */}
+      {/* Meta row — space always reserved when hasMeta, opacity toggles on hover (no reflow) */}
       {hasMeta && (
-        <div className="hidden group-hover:flex items-center gap-1.5 flex-wrap px-2 pb-1.5 pl-9">
+        <div className="flex items-center gap-1.5 flex-wrap px-2 pb-1.5 pl-9 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           {participant.department && (
             <span className="text-muted-foreground text-[10px] shrink-0">
               {participant.department}
@@ -101,6 +97,6 @@ export function ParticipantCard({ participant, teamIndex, memberIndex }: Props) 
           )}
         </div>
       )}
-    </div>
+    </Card>
   );
 }

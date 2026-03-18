@@ -23,23 +23,24 @@ const DEPT_BADGE_CLASS: Record<string, string> = {
   "DC/ML":   "bg-amber-500/15  text-amber-300  border-amber-500/20  hover:bg-amber-500/20",
 };
 
+
 interface Props { team: Team; teamIndex: number; isDragging?: boolean; }
 
 export function TeamCard({ team, teamIndex, isDragging }: Props) {
-  const globalAvg = useAppStore(s =>
-    s.teams.flatMap(t => t.members).reduce((sum, p) => sum + (p.skillLevel ?? 3), 0) /
-    Math.max(1, s.teams.flatMap(t => t.members).length)
-  );
+  const globalAvg = useAppStore(s => {
+    const all = s.teams.flatMap(t => t.members);
+    return all.reduce((sum, p) => sum + (p.skillLevel ?? 3), 0) / Math.max(1, all.length);
+  });
 
   const { setNodeRef, isOver } = useDroppable({
     id: `team-${teamIndex}`,
     data: { teamIndex },
   });
 
-  const accent = TEAM_ACCENTS[teamIndex % TEAM_ACCENTS.length];
-  const pct = Math.round((team.stats.avgSkill / 5) * 100);
+  const accent    = TEAM_ACCENTS[teamIndex % TEAM_ACCENTS.length];
+  const pct       = Math.round((team.stats.avgSkill / 5) * 100);
   const inBalance = Math.abs(team.stats.avgSkill - globalAvg) <= 0.5;
-  const depts = Object.entries(team.stats.departments);
+  const depts     = Object.entries(team.stats.departments);
 
   return (
     <Card
@@ -89,6 +90,7 @@ export function TeamCard({ team, teamIndex, isDragging }: Props) {
           <ParticipantCard key={p.id} participant={p} teamIndex={teamIndex} memberIndex={mi} />
         ))}
       </CardContent>
+
     </Card>
   );
 }

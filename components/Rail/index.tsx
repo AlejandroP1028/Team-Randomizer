@@ -3,6 +3,8 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
+const DOT_COLORS = ["#6366f1","#ec4899","#f59e0b","#10b981","#3b82f6","#8b5cf6","#ef4444","#14b8a6"];
+
 export function Rail() {
   const router     = useRouter();
   const pathname   = usePathname();
@@ -11,15 +13,9 @@ export function Rail() {
   const workspaces = useAppStore(s => s.workspaces);
   const loadPreset = useAppStore(s => s.loadPreset);
 
-  // Derive active preset from URL — not from store
   const activeId = pathname.startsWith("/workspace/")
     ? pathname.split("/")[2]
     : null;
-
-  function handleSelectPreset(id: string) {
-    loadPreset(id);
-    router.push(`/workspace/${id}`);
-  }
 
   const totalSaved = presets.length + splits.length;
 
@@ -34,10 +30,10 @@ export function Rail() {
         </p>
       </div>
 
-      {/* Team list */}
+      {/* List */}
       <div className="flex-1 overflow-y-auto py-2">
 
-        {/* Presets section */}
+        {/* Presets */}
         {presets.length > 0 && (
           <>
             <p className="px-4 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -49,19 +45,11 @@ export function Rail() {
               return (
                 <button
                   key={preset.id}
-                  onClick={() => handleSelectPreset(preset.id)}
-                  className={`
-                    w-full flex items-center gap-2 px-4 py-2 text-left text-sm
-                    transition-colors border-l-2
-                    ${isActive
-                      ? "border-l-blue-500 bg-background font-medium text-foreground"
-                      : "border-l-transparent text-muted-foreground hover:bg-background"}
-                  `}
+                  onClick={() => { loadPreset(preset.id); router.push(`/workspace/${preset.id}`); }}
+                  className={`w-full flex items-center gap-2 px-4 py-2 text-left transition-colors border-l-2
+                    ${isActive ? "border-l-blue-500 bg-background font-medium text-foreground" : "border-l-transparent text-muted-foreground hover:bg-background"}`}
                 >
-                  <span
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ background: preset.color ?? "#888780" }}
-                  />
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: preset.color ?? "#888780" }} />
                   <span className="flex-1 truncate text-xs">{preset.name}</span>
                   {taskCount > 0 && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 shrink-0">
@@ -74,44 +62,71 @@ export function Rail() {
           </>
         )}
 
-        {/* Splits section */}
+        {/* Splits */}
         {splits.length > 0 && (
           <>
             <p className="px-4 pt-3 pb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               Splits
             </p>
             {splits.map(split => {
-              const taskCount = split.subTeams.reduce((sum, st) => {
-                const ws = workspaces[st.id];
-                return sum + (ws?.tasks?.length ?? 0);
-              }, 0);
-              const isActive = split.id === activeId;
+              if (split.prdMode === "shared") {
+                /* ── Shared: single row linking to split ID ── */
+                const taskCount = workspaces[split.id]?.tasks?.length ?? 0;
+                const isActive  = split.id === activeId;
+                return (
+                  <button
+                    key={split.id}
+                    onClick={() => router.push(`/workspace/${split.id}`)}
+                    className={`w-full flex items-center gap-2 px-4 py-2 text-left transition-colors border-l-2
+                      ${isActive ? "border-l-blue-500 bg-background font-medium text-foreground" : "border-l-transparent text-muted-foreground hover:bg-background"}`}
+                  >
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: split.color ?? "#888780" }} />
+                    <span className="flex-1 truncate text-xs">{split.name}</span>
+                    {taskCount > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 shrink-0">
+                        {taskCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              }
+
+              /* ── Per-team: non-clickable header + indented sub-team rows ── */
+              const anyActive = split.subTeams.some(st => st.id === activeId);
               return (
-                <button
-                  key={split.id}
-                  onClick={() => router.push(`/workspace/${split.id}`)}
-                  className={`
-                    w-full flex items-center gap-2 px-4 py-2 text-left text-sm
-                    transition-colors border-l-2
-                    ${isActive
-                      ? "border-l-blue-500 bg-background font-medium text-foreground"
-                      : "border-l-transparent text-muted-foreground hover:bg-background"}
-                  `}
-                >
-                  <span
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ background: split.color ?? "#888780" }}
-                  />
-                  <span className="flex-1 truncate text-xs">{split.name}</span>
-                  <span className="text-[10px] text-muted-foreground shrink-0">
-                    {split.subTeams.length}t
-                  </span>
-                  {taskCount > 0 && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 shrink-0">
-                      {taskCount}
+                <div key={split.id}>
+                  {/* Split group header — not navigable */}
+                  <div className={`flex items-center gap-2 px-4 py-1.5 ${anyActive ? "text-foreground" : "text-muted-foreground"}`}>
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: split.color ?? "#888780" }} />
+                    <span className="flex-1 truncate text-xs font-medium">{split.name}</span>
+                    <span className="text-[9px] text-muted-foreground shrink-0 bg-muted px-1 rounded">
+                      per team
                     </span>
-                  )}
-                </button>
+                  </div>
+
+                  {/* Sub-team rows */}
+                  {split.subTeams.map((st, i) => {
+                    const taskCount = workspaces[st.id]?.tasks?.length ?? 0;
+                    const isActive  = st.id === activeId;
+                    const dotColor  = DOT_COLORS[i % DOT_COLORS.length];
+                    return (
+                      <button
+                        key={st.id}
+                        onClick={() => router.push(`/workspace/${st.id}`)}
+                        className={`w-full flex items-center gap-2 pl-8 pr-4 py-1.5 text-left transition-colors border-l-2
+                          ${isActive ? "border-l-blue-500 bg-background font-medium text-foreground" : "border-l-transparent text-muted-foreground hover:bg-background"}`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: dotColor }} />
+                        <span className="flex-1 truncate text-xs">{st.name}</span>
+                        {taskCount > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 shrink-0">
+                            {taskCount}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               );
             })}
           </>
@@ -126,8 +141,7 @@ export function Rail() {
       <div className="p-3 border-t border-border flex flex-col gap-2">
         <button
           onClick={() => router.push("/")}
-          className="w-full py-1.5 text-xs border border-dashed border-border rounded-md
-            text-muted-foreground hover:bg-background transition-colors"
+          className="w-full py-1.5 text-xs border border-dashed border-border rounded-md text-muted-foreground hover:bg-background transition-colors"
         >
           + New team
         </button>

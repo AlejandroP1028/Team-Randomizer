@@ -20,7 +20,8 @@
       "Bash(rm -f \"C:/Users/alejandro/projects/Team-Randomizer/app/workspace/[presetId]/prd/page.tsx\" \"C:/Users/alejandro/projects/Team-Randomizer/app/workspace/[presetId]/tasks/page.tsx\")",
       "Bash(rmdir \"C:/Users/alejandro/projects/Team-Randomizer/app/workspace/[presetId]/prd\" \"C:/Users/alejandro/projects/Team-Randomizer/app/workspace/[presetId]/tasks\")",
       "Bash(git checkout:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

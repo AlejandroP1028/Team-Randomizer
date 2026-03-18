@@ -10,10 +10,18 @@ export function ContextPanel({ presetId }: Props) {
   const router     = useRouter();
   const preset     = useAppStore(s => s.presets.find(p => p.id === presetId));
   const split      = useAppStore(s => s.splits.find(sp => sp.id === presetId));
+  // Per-team mode: presetId is a subTeam.id — find the parent split
+  const parentSplit = useAppStore(s =>
+    !preset && !split
+      ? s.splits.find(sp => sp.subTeams.some(st => st.id === presetId)) ?? null
+      : null
+  );
+  const subTeam = parentSplit?.subTeams.find(st => st.id === presetId) ?? null;
+
   const loadPreset = useAppStore(s => s.loadPreset);
 
-  const name  = preset?.name  ?? split?.name  ?? "Workspace";
-  const color = preset?.color ?? split?.color ?? null;
+  const name  = preset?.name  ?? split?.name  ?? subTeam?.name  ?? "Workspace";
+  const color = preset?.color ?? split?.color ?? parentSplit?.color ?? null;
 
   function handleEdit() {
     if (preset) loadPreset(presetId);
@@ -26,10 +34,7 @@ export function ContextPanel({ presetId }: Props) {
       {/* Header */}
       <div className="shrink-0 flex items-center gap-2.5 px-4 py-3.5 border-b border-border">
         {color && (
-          <span
-            className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
-            style={{ background: color }}
-          />
+          <span className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style={{ background: color }} />
         )}
         <span className="flex-1 text-sm font-semibold truncate">{name}</span>
         <button

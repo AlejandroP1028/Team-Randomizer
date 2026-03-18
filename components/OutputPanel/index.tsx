@@ -11,13 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export function OutputPanel() {
-  const { teams, warnings, undo, teamHistory, scores, config } = useAppStore(useShallow(s => ({
+  const { teams, warnings, undo, teamHistory, scores } = useAppStore(useShallow(s => ({
     teams: s.teams,
     warnings: s.warnings,
     undo: s.undo,
     teamHistory: s.teamHistory,
     scores: s.scores,
-    config: s.config,
   })));
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -104,30 +103,73 @@ export function OutputPanel() {
             <TeamGrid />
           </div>
 
-          {/* Objective scores */}
+          {/* Summary strip */}
           {scores && (
-            <div className="px-3 pb-1 flex gap-3 border-t border-border pt-2">
-              {(["skill", "department", "seniority", "headcount"] as const).map(key => {
-                const val = Math.round(scores[key]);
-                const colour = val >= 80 ? "text-green-600" : val >= 60 ? "text-amber-600" : "text-red-500";
-                const label = key === "department"
-                  ? (config.groupingMode === "specialised" ? "dept match" : "dept mix")
-                  : key;
+            <div className="shrink-0 px-3 pt-3 pb-1 grid grid-cols-4 gap-3 border-t border-border">
+              {(
+                [
+                  {
+                    key:   "skill",
+                    label: "Skill",
+                    value: `${skillSpread.toFixed(1)} spread`,
+                    desc:  skillSpread <= 0.5 ? "evenly balanced" : skillSpread <= 1 ? "slight variance" : "notable imbalance",
+                    tone:  skillSpread <= 0.5 ? "good" : skillSpread <= 1 ? "neutral" : "warn",
+                  },
+                  {
+                    key:   "department",
+                    label: "Dept mix",
+                    value: `${deptCount} dept${deptCount !== 1 ? "s" : ""}`,
+                    desc:  deptCount === 0 ? "no dept data" : deptCount === 1 ? "single dept" : deptCount <= 2 ? "some variety" : "cross-functional",
+                    tone:  deptCount >= 3 ? "good" : deptCount === 2 ? "neutral" : "warn",
+                  },
+                  {
+                    key:   "seniority",
+                    label: "Seniority",
+                    value: [
+                      seniorityTotals.senior > 0 ? `${seniorityTotals.senior}s` : "",
+                      seniorityTotals.mid    > 0 ? `${seniorityTotals.mid}m`    : "",
+                      seniorityTotals.junior > 0 ? `${seniorityTotals.junior}j` : "",
+                    ].filter(Boolean).join(" · ") || "—",
+                    desc:
+                      seniorityTotals.senior > 0 && seniorityTotals.junior > 0 ? "senior–junior spread" :
+                      seniorityTotals.senior > 0 ? "senior-heavy" :
+                      seniorityTotals.junior > 0 ? "junior-heavy" : "mid-level focus",
+                    tone: seniorityTotals.senior > 0 && (seniorityTotals.mid > 0 || seniorityTotals.junior > 0) ? "good" : "neutral",
+                  },
+                  {
+                    key:   "headcount",
+                    label: "Headcount",
+                    value: `${avgTeamSize.toFixed(1)} avg`,
+                    desc:  `${allMembers.length} members across ${teams.length} team${teams.length !== 1 ? "s" : ""}`,
+                    tone:  "neutral" as const,
+                  },
+                ] as { key: string; label: string; value: string; desc: string; tone: "good" | "warn" | "neutral" }[]
+              ).map(({ key, label, value, desc, tone }) => {
+                const scoreVal = scores[key as keyof typeof scores] as number | undefined;
+                const valueColor =
+                  tone === "good" ? "text-emerald-400" :
+                  tone === "warn" ? "text-amber-400"   :
+                  "text-foreground/80";
                 return (
-                  <div key={key} className="flex-1 text-center">
-                    <div className={`text-sm font-medium ${colour}`}>{val}</div>
-                    <div className="text-[9px] text-muted-foreground capitalize">{label}</div>
+                  <div key={key} className="flex flex-col gap-0.5">
+                    <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+                      {label}
+                    </span>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className={`text-[11px] font-semibold leading-tight ${valueColor}`}>{value}</span>
+                      {scoreVal !== undefined && (
+                        <span className={`text-[10px] font-mono ${valueColor}`}>
+                          {Math.round(scoreVal)}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[9px] text-muted-foreground/50 leading-tight">{desc}</span>
                   </div>
                 );
               })}
-              <div className="flex-1 text-center border-l border-border">
-                <div className="text-sm font-medium text-foreground">
-                  {Math.round(scores.composite)}
-                </div>
-                <div className="text-[9px] text-muted-foreground">overall</div>
-              </div>
             </div>
           )}
+
 
           {/* Save CTA */}
           {!isSaved && (
