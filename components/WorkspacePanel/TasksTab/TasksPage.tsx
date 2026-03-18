@@ -1,10 +1,11 @@
 "use client";
-import { useShallow } from "zustand/react/shallow";
+import { useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { FilterBar } from "./FilterBar";
 import { ProgressBar } from "./ProgressBar";
 import { TaskBoard } from "./TaskBoard";
 import { ExportTasksBar } from "./ExportTasksBar";
+import { NewTaskModal } from "./NewTaskModal";
 import type { Task } from "@/lib/types";
 
 const EMPTY_TASKS: Task[] = [];
@@ -12,30 +13,18 @@ const EMPTY_TASKS: Task[] = [];
 interface Props { presetId: string; }
 
 export function TasksPage({ presetId }: Props) {
-  const { addTask, tasks } = useAppStore(useShallow(s => ({
-    addTask: s.addTask,
-    tasks:   s.workspaces[presetId]?.tasks ?? EMPTY_TASKS,
-  })));
-
-  function handleAddTask() {
-    addTask(presetId, {
-      title: "",
-      status: "todo",
-      priority: "medium",
-      description: "",
-      section: "",
-      suggestedAssignee: null,
-      confirmedAssignee: null,
-    });
-  }
+  const tasks = useAppStore(s => s.workspaces[presetId]?.tasks ?? EMPTY_TASKS);
+  const [modalOpen, setModalOpen] = useState(false);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
 
+      <NewTaskModal presetId={presetId} open={modalOpen} onClose={() => setModalOpen(false)} />
+
       {/* Top bar */}
       <div className="shrink-0 flex items-center gap-3 px-5 py-3 border-b border-border">
         <button
-          onClick={handleAddTask}
+          onClick={() => setModalOpen(true)}
           className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 active:scale-[0.98] transition-all shadow-sm"
         >
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>

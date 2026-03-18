@@ -25,20 +25,35 @@ function initials(name: string) {
 }
 
 function MemberRow({ p, color }: { p: Participant; color: string }) {
+  const hasTags = p.tags && p.tags.length > 0;
   return (
-    <Card className="flex-row items-center gap-2 py-2 px-2.5 rounded-lg cursor-default
+    <Card className="group flex-col gap-0 py-0 px-0 rounded-lg cursor-default
       hover:bg-muted/40 hover:ring-foreground/20 transition-colors">
-      <div
-        className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
-        style={{ background: color + "28", color }}
-      >
-        {initials(p.name)}
+      <div className="flex items-center gap-2 py-2 px-2.5">
+        <div
+          className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+          style={{ background: color + "28", color }}
+        >
+          {initials(p.name)}
+        </div>
+        <span className="text-xs truncate flex-1 text-foreground/85">{p.name}</span>
+        {p.skillLevel != null && (
+          <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold shrink-0 ${SKILL_STYLE[p.skillLevel] ?? ""}`}>
+            L{p.skillLevel}
+          </span>
+        )}
       </div>
-      <span className="text-xs truncate flex-1 text-foreground/85">{p.name}</span>
-      {p.skillLevel != null && (
-        <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold shrink-0 ${SKILL_STYLE[p.skillLevel] ?? ""}`}>
-          L{p.skillLevel}
-        </span>
+      {hasTags && (
+        <div className="hidden group-hover:flex gap-1 flex-wrap px-2.5 pb-2 pl-10">
+          {p.tags!.slice(0, 5).map(tag => (
+            <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded-md bg-secondary border border-border text-muted-foreground">
+              {tag}
+            </span>
+          ))}
+          {p.tags!.length > 5 && (
+            <span className="text-[9px] text-muted-foreground">+{p.tags!.length - 5}</span>
+          )}
+        </div>
       )}
     </Card>
   );

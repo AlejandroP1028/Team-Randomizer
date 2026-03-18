@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
-import { useAppStore } from "@/store/useAppStore";
 import { TaskCard } from "./TaskCard";
+import { NewTaskModal } from "./NewTaskModal";
 import type { Task, TaskStatus } from "@/lib/types";
 
 const STATUS_CONFIG: Record<TaskStatus, { dot: string; tint: string; ring: string }> = {
@@ -21,9 +21,7 @@ interface Props {
 }
 
 export function TaskColumn({ status, label, tasks, presetId, isDragging }: Props) {
-  const addTask = useAppStore(s => s.addTask);
-  const [adding, setAdding] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
 
   const { setNodeRef, isOver } = useDroppable({
     id: `column-${status}`,
@@ -32,26 +30,15 @@ export function TaskColumn({ status, label, tasks, presetId, isDragging }: Props
 
   const cfg = STATUS_CONFIG[status];
 
-  function commitAdd() {
-    const title = newTitle.trim();
-    if (title) {
-      addTask(presetId, {
-        title,
-        status,
-        priority: "medium",
-        description: "",
-        section: "",
-        suggestedAssignee: null,
-        confirmedAssignee: null,
-      });
-    }
-    setNewTitle("");
-    setAdding(false);
-  }
-
   return (
     /* h-full so the column stretches to the board height; flex-col to stack header + list + add */
     <div className="flex flex-col min-w-[264px] w-[264px] shrink-0 h-full">
+      <NewTaskModal
+        presetId={presetId}
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        defaultStatus={status}
+      />
 
       {/* Column header */}
       <div className="shrink-0 flex items-center gap-2 px-1 pb-3">
@@ -88,29 +75,14 @@ export function TaskColumn({ status, label, tasks, presetId, isDragging }: Props
         )}
       </div>
 
-      {/* Inline add */}
+      {/* Add task */}
       <div className="shrink-0 pt-2">
-        {adding ? (
-          <input
-            autoFocus
-            value={newTitle}
-            onChange={e => setNewTitle(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === "Enter") commitAdd();
-              if (e.key === "Escape") { setNewTitle(""); setAdding(false); }
-            }}
-            onBlur={commitAdd}
-            placeholder="Task title…"
-            className="w-full px-3 py-2 text-xs rounded-lg border border-primary bg-card outline-none shadow-sm"
-          />
-        ) : (
-          <button
-            onClick={() => setAdding(true)}
-            className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
-          >
-            + Add task
-          </button>
-        )}
+        <button
+          onClick={() => setModalOpen(true)}
+          className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
+        >
+          + Add task
+        </button>
       </div>
     </div>
   );
