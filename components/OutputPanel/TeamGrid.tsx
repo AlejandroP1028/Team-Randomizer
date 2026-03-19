@@ -94,7 +94,7 @@ export function TeamGrid() {
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 mx-1  ">
         <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}>
           {teams.map((team, ti) => (
             <TeamCard key={team.id} team={team} teamIndex={ti} isDragging={dragActive !== null} />

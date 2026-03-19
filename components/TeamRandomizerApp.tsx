@@ -20,7 +20,7 @@ export function TeamRandomizerApp() {
   return (
     <div className="flex h-full overflow-hidden">
       {/* Input panel — participant config, still visible on home route */}
-      <div className="w-[280px] shrink-0 border-r border-border overflow-y-auto">
+      <div className="w-[320px] shrink-0 border-r border-border overflow-y-auto">
         <InputPanel />
       </div>
       {/* Right pane — empty state or team builder output */}

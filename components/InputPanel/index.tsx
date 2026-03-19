@@ -13,9 +13,8 @@ export function InputPanel() {
   const participants = useAppStore(s => s.participants);
 
   return (
-    <div className="flex flex-col gap-5 p-4 h-full">
+    <div className="flex flex-col gap-2 p-4 h-full">
       <ParticipantInput />
-      <Separator />
       <ConstraintConfig />
 
       <Button

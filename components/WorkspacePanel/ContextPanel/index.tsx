@@ -29,7 +29,7 @@ export function ContextPanel({ presetId }: Props) {
   }
 
   return (
-    <aside className="w-[240px] shrink-0 flex flex-col h-full overflow-hidden border-r border-border bg-muted/10">
+    <aside className="w-[300px] shrink-0 flex flex-col h-full overflow-hidden border-r border-border bg-muted/10">
 
       {/* Header */}
       <div className="shrink-0 flex items-center gap-2.5 px-4 py-3.5 border-b border-border">

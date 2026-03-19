@@ -23,6 +23,7 @@ export function CustomTeamCard({ team, isDragging }: Props) {
     <Card
       ref={setNodeRef}
       className={`
+    mx-1
         flex flex-col border-dashed border-border/60 bg-transparent
         transition-all duration-100
         ${isOver && isDragging ? "ring-2 ring-primary/30 bg-primary/5 border-primary/40" : ""}
