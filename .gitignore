@@ -13,3 +13,7 @@ out/
 # misc
 .DS_Store
 *.pem
+
+.claude/settings.local.json
+*.tsbuildinfo
+*.bak
